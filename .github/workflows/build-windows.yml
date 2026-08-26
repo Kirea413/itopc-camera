@@ -1,4 +1,4 @@
-name: Build Windows receiver
+name: Build iToPC apps
 
 on:
   workflow_dispatch:
@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - "windows/**"
+      - "ios/**"
       - "THIRD_PARTY_LICENSES/**"
       - ".github/workflows/build-windows.yml"
 
@@ -36,3 +37,20 @@ jobs:
           path: windows/dist/iToPC-Receiver-win-x64.zip
           if-no-files-found: error
 
+  build-ios:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Compile unsigned IPA
+        run: |
+          chmod +x ios/build-ipa.sh
+          ios/build-ipa.sh
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: iToPC-unsigned-ipa
+          path: ios/build/iToPC-unsigned.ipa
+          if-no-files-found: error
