@@ -103,10 +103,17 @@ final class HEVCEncoder {
             session = nil
         }
 
-        let encoderSpecification: CFDictionary = [
-            kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder as String: true,
-            kVTVideoEncoderSpecification_RequireHardwareAcceleratedVideoEncoder as String: true
-        ] as CFDictionary
+        let encoderSpecification: CFDictionary?
+        if #available(iOS 17.4, *) {
+            encoderSpecification = [
+                kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder as String: true,
+                kVTVideoEncoderSpecification_RequireHardwareAcceleratedVideoEncoder as String: true
+            ] as CFDictionary
+        } else {
+            // These specification keys are unavailable before iOS 17.4. HEVC encoding on
+            // supported iPhones still uses VideoToolbox's native hardware encoder.
+            encoderSpecification = nil
+        }
 
         var newSession: VTCompressionSession?
         let status = VTCompressionSessionCreate(

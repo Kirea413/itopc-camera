@@ -21,14 +21,14 @@ $extractRoot = Join-Path $tempRoot "expanded"
 try {
     New-Item -ItemType Directory -Path $tempRoot -Force | Out-Null
     New-Item -ItemType Directory -Path $extractRoot -Force | Out-Null
-    Write-Host "FFmpegをダウンロードしています: $downloadUrl"
+    Write-Host "Downloading FFmpeg: $downloadUrl"
     Invoke-WebRequest -Uri $downloadUrl -OutFile $archivePath
     Expand-Archive -LiteralPath $archivePath -DestinationPath $extractRoot
 
     $ffplay = Get-ChildItem -LiteralPath $extractRoot -Filter "ffplay.exe" -File -Recurse | Select-Object -First 1
     $ffmpeg = Get-ChildItem -LiteralPath $extractRoot -Filter "ffmpeg.exe" -File -Recurse | Select-Object -First 1
     if (-not $ffplay -or -not $ffmpeg) {
-        throw "ダウンロードしたFFmpegにffplay.exeまたはffmpeg.exeが含まれていません。"
+        throw "The downloaded FFmpeg archive does not contain ffplay.exe and ffmpeg.exe."
     }
 
     New-Item -ItemType Directory -Path $targetRoot -Force | Out-Null
@@ -40,7 +40,7 @@ try {
         Copy-Item -LiteralPath $license.FullName -Destination (Join-Path $targetRoot "FFMPEG-LICENSE.txt") -Force
     }
 
-    Write-Host "準備完了: $targetRoot"
+    Write-Host "FFmpeg is ready: $targetRoot"
 }
 finally {
     $resolvedTempBase = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath())

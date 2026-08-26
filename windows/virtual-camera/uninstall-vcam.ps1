@@ -6,7 +6,7 @@ $controlExe = Join-Path $targetDirectory "iToPC.VirtualCamera.Control.exe"
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
 $principal = [Security.Principal.WindowsPrincipal]::new($identity)
 if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    throw "仮想カメラの削除には管理者権限が必要です。"
+    throw "Administrator privileges are required to remove the virtual camera."
 }
 
 if (Test-Path -LiteralPath $controlExe) {
@@ -20,9 +20,9 @@ if (Test-Path -LiteralPath $targetDirectory) {
     $resolvedProgramFiles = [System.IO.Path]::GetFullPath($env:ProgramFiles)
     $resolvedTarget = [System.IO.Path]::GetFullPath($targetDirectory)
     if (-not $resolvedTarget.StartsWith($resolvedProgramFiles, [StringComparison]::OrdinalIgnoreCase)) {
-        throw "削除対象がProgram Files外を指しています。"
+        throw "Refusing to remove a target outside Program Files."
     }
     Remove-Item -LiteralPath $resolvedTarget -Recurse -Force
 }
 
-Write-Host "iToPC Cameraを削除しました。"
+Write-Host "iToPC Camera removed."

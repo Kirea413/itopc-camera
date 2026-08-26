@@ -13,18 +13,18 @@ $controlExeName = "iToPC.VirtualCamera.Control.exe"
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
 $principal = [Security.Principal.WindowsPrincipal]::new($identity)
 if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    throw "仮想カメラのインストールには管理者権限が必要です。"
+    throw "Administrator privileges are required to install the virtual camera."
 }
 
 if ([Environment]::OSVersion.Version.Build -lt 22000) {
-    throw "iToPC仮想カメラにはWindows 11 build 22000以降が必要です。"
+    throw "The iToPC virtual camera requires Windows 11 build 22000 or newer."
 }
 
 $resolvedPayload = (Resolve-Path -LiteralPath $PayloadDirectory).Path
 $sourceDll = Join-Path $resolvedPayload $sourceDllName
 $controlExe = Join-Path $resolvedPayload $controlExeName
-if (-not (Test-Path -LiteralPath $sourceDll)) { throw "仮想カメラソースがありません: $sourceDll" }
-if (-not (Test-Path -LiteralPath $controlExe)) { throw "仮想カメラ制御アプリがありません: $controlExe" }
+if (-not (Test-Path -LiteralPath $sourceDll)) { throw "Virtual camera source not found: $sourceDll" }
+if (-not (Test-Path -LiteralPath $controlExe)) { throw "Virtual camera control app not found: $controlExe" }
 
 New-Item -ItemType Directory -Path $targetDirectory -Force | Out-Null
 New-Item -ItemType Directory -Path $dataDirectory -Force | Out-Null
@@ -34,17 +34,16 @@ Get-ChildItem -LiteralPath $resolvedPayload -File | ForEach-Object {
 }
 
 & icacls.exe $dataDirectory /inheritance:e /grant '*S-1-5-32-545:(OI)(CI)M' '*S-1-5-19:(OI)(CI)R' '*S-1-5-18:(OI)(CI)R' | Out-Null
-if ($LASTEXITCODE -ne 0) { throw "共有フレームフォルダの権限設定に失敗しました。" }
+if ($LASTEXITCODE -ne 0) { throw "Failed to set permissions on the shared-frame directory." }
 
 $installedSource = Join-Path $targetDirectory $sourceDllName
 & regsvr32.exe /s $installedSource
-if ($LASTEXITCODE -ne 0) { throw "仮想カメラCOMソースの登録に失敗しました。" }
+if ($LASTEXITCODE -ne 0) { throw "Failed to register the virtual camera COM source." }
 
 & (Join-Path $targetDirectory $controlExeName) create
 if ($LASTEXITCODE -ne 0) {
     & regsvr32.exe /s /u $installedSource
-    throw "Windowsへの仮想カメラ作成に失敗しました。"
+    throw "Failed to create the Windows virtual camera."
 }
 
-Write-Host "iToPC Cameraをインストールしました。"
-
+Write-Host "iToPC Camera installed."

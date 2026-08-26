@@ -74,4 +74,4 @@ Get-ChildItem -LiteralPath $virtualPackageOutput -File | ForEach-Object {
     Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $virtualToolOutput $_.Name) -Force
 }
 
-Write-Host "Windows受信アプリを作成しました: $(Join-Path $outputRoot 'iToPC.Receiver.exe')"
+Write-Host "Windows receiver built: $(Join-Path $outputRoot 'iToPC.Receiver.exe')"
