@@ -1,24 +1,22 @@
-name: Build unsigned iOS IPA
+name: Build iOS IPA
 
 on:
-  workflow_dispatch: {}
   push:
-    branches:
-      - main
-
-permissions:
-  contents: read
+  workflow_dispatch:
 
 jobs:
-  build-ios:
+  ipa:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
       - name: Install XcodeGen
         run: brew install xcodegen
-      - name: Build unsigned IPA
-        run: chmod +x ios/build-ipa.sh && ios/build-ipa.sh
-      - name: Upload IPA
+      - name: Compile unsigned IPA
+        run: |
+          chmod +x ios/build-ipa.sh
+          ios/build-ipa.sh
+      - name: Upload unsigned IPA
         uses: actions/upload-artifact@v4
         with:
           name: iToPC-unsigned-ipa
