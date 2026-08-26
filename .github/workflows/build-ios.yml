@@ -1,18 +1,17 @@
 name: Build unsigned iOS IPA
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: {}
   push:
-    paths:
-      - "ios/**"
-      - ".github/workflows/build-ios.yml"
+    branches:
+      - main
 
 permissions:
   contents: read
 
 jobs:
-  build:
-    runs-on: macos-15
+  build-ios:
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - name: Install XcodeGen
