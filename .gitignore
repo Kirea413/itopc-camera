@@ -1,0 +1,13 @@
+.DS_Store
+.idea/
+.vs/
+.vscode/
+bin/
+obj/
+build/
+dist/
+DerivedData/
+*.ipa
+*.xcarchive
+windows/tools/
+

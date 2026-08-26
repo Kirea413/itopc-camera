@@ -1,0 +1,38 @@
+name: Build Windows receiver
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "windows/**"
+      - "THIRD_PARTY_LICENSES/**"
+      - ".github/workflows/build-windows.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows-x64:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install .NET SDKs
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+      - name: Build receiver and virtual camera
+        shell: powershell
+        run: .\windows\scripts\build-receiver.ps1 -Runtime win-x64
+      - name: Create distribution archive
+        shell: powershell
+        run: Compress-Archive -Path .\windows\dist\iToPC-Receiver-win-x64\* -DestinationPath .\windows\dist\iToPC-Receiver-win-x64.zip -Force
+      - name: Upload Windows app
+        uses: actions/upload-artifact@v4
+        with:
+          name: iToPC-Receiver-win-x64
+          path: windows/dist/iToPC-Receiver-win-x64.zip
+          if-no-files-found: error
+
