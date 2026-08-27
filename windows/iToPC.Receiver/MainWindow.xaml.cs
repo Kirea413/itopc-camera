@@ -81,7 +81,14 @@ public partial class MainWindow : Window
             var exitCode = VirtualCameraInstaller.IsInstalled
                 ? await VirtualCameraInstaller.UninstallAsync(payload)
                 : await VirtualCameraInstaller.InstallAsync(payload);
-            if (exitCode != 0) throw new InvalidOperationException($"仮想カメラ設定が終了コード{exitCode}で失敗しました。");
+            if (exitCode != 0)
+            {
+                var details = VirtualCameraInstaller.ReadInstallLog();
+                if (!string.IsNullOrWhiteSpace(details)) AppendLog(details);
+                throw new InvalidOperationException(
+                    $"仮想カメラ設定が終了コード{exitCode}で失敗しました。" +
+                    (string.IsNullOrWhiteSpace(details) ? string.Empty : $"{Environment.NewLine}{Environment.NewLine}{details}"));
+            }
 
             AppendLog(VirtualCameraInstaller.IsInstalled
                 ? "iToPC Cameraをインストールしました。"

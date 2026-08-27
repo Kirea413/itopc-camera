@@ -26,7 +26,10 @@ final class CameraStreamer: ObservableObject, CameraCaptureDelegate {
         encoder.onEncodedFrame = { [weak server = self.server] data, isKeyFrame in
             server?.send(data, isKeyFrame: isKeyFrame)
         }
-        encoder.onError = { [weak self] error in self?.show(error) }
+        encoder.onError = { [weak self] error in
+            guard let self, self.isRunning else { return }
+            self.failAndStop(error)
+        }
         server.onConnectionChanged = { [weak self] connected in
             guard let self else { return }
             self.isClientConnected = connected

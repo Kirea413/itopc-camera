@@ -25,7 +25,7 @@ public sealed unsafe class FrameGenerator : IDisposable
         return Constants.S_OK;
     }
 
-    public IComObject<IMFSample> Generate(IComObject<IMFSample> sample, Guid format)
+    public void Generate(IComObject<IMFSample> sample, Guid format)
     {
         ArgumentNullException.ThrowIfNull(sample);
         if (format != Constants.MFVideoFormat_NV12)
@@ -38,7 +38,6 @@ public sealed unsafe class FrameGenerator : IDisposable
         });
         buffer.SetCurrentLength(Shared.FrameSize);
         _frameCount++;
-        return sample;
     }
 
     public void Dispose()

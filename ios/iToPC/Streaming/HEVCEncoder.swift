@@ -24,9 +24,12 @@ final class HEVCEncoder {
     var onError: ((Error) -> Void)?
 
     private let queue = DispatchQueue(label: "local.itopc.encoder", qos: .userInteractive)
+    private let outstandingFramesLock = NSLock()
+    private let maximumOutstandingFrames = 2
     private var session: VTCompressionSession?
     private var fps: Int32 = 60
     private var forceNextKeyFrame = true
+    private var outstandingFrames = 0
 
     func configure(
         width: Int32,
@@ -47,12 +50,17 @@ final class HEVCEncoder {
     }
 
     func encode(_ sampleBuffer: CMSampleBuffer) {
+        guard reserveFrame() else { return }
+
         queue.async { [weak self] in
             guard
                 let self,
                 let session = self.session,
                 let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer)
-            else { return }
+            else {
+                self?.releaseFrame()
+                return
+            }
 
             var infoFlags = VTEncodeInfoFlags()
             let presentationTimeStamp = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
@@ -76,6 +84,7 @@ final class HEVCEncoder {
                 infoFlagsOut: &infoFlags
             )
             if status != noErr {
+                self.releaseFrame()
                 self.reportError(HEVCEncoderError.creationFailed(status))
             }
         }
@@ -94,6 +103,7 @@ final class HEVCEncoder {
             }
             self.session = nil
             self.forceNextKeyFrame = true
+            self.resetOutstandingFrames()
         }
     }
 
@@ -137,6 +147,9 @@ final class HEVCEncoder {
 
         try set(kVTCompressionPropertyKey_RealTime, value: true, on: newSession)
         try set(kVTCompressionPropertyKey_AllowFrameReordering, value: false, on: newSession)
+        // Some older hardware does not expose this optional low-latency hint.
+        // The explicit two-frame admission limit above remains the fallback.
+        try? set(kVTCompressionPropertyKey_MaxFrameDelayCount, value: 1, on: newSession)
         try set(kVTCompressionPropertyKey_ExpectedFrameRate, value: fps, on: newSession)
         try set(kVTCompressionPropertyKey_AverageBitRate, value: bitrate, on: newSession)
         try set(kVTCompressionPropertyKey_DataRateLimits, value: [bitrate / 8, 1], on: newSession)
@@ -160,6 +173,7 @@ final class HEVCEncoder {
     }
 
     fileprivate func receiveEncodedSample(status: OSStatus, sampleBuffer: CMSampleBuffer?) {
+        releaseFrame()
         guard status == noErr, let sampleBuffer, CMSampleBufferDataIsReady(sampleBuffer) else {
             if status != noErr { reportError(HEVCEncoderError.creationFailed(status)) }
             return
@@ -184,6 +198,26 @@ final class HEVCEncoder {
 
     private func reportError(_ error: Error) {
         DispatchQueue.main.async { [weak self] in self?.onError?(error) }
+    }
+
+    private func reserveFrame() -> Bool {
+        outstandingFramesLock.lock()
+        defer { outstandingFramesLock.unlock() }
+        guard outstandingFrames < maximumOutstandingFrames else { return false }
+        outstandingFrames += 1
+        return true
+    }
+
+    private func releaseFrame() {
+        outstandingFramesLock.lock()
+        outstandingFrames = max(0, outstandingFrames - 1)
+        outstandingFramesLock.unlock()
+    }
+
+    private func resetOutstandingFrames() {
+        outstandingFramesLock.lock()
+        outstandingFrames = 0
+        outstandingFramesLock.unlock()
     }
 }
 

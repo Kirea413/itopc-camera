@@ -9,6 +9,11 @@ internal static class VirtualCameraInstaller
 {
     private const string SourceClsid = "{f74cfe1b-8b5a-4a3f-9694-7d73024d8f97}";
 
+    public static string InstallLogPath => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+        "iToPC",
+        "virtual-camera-install.log");
+
     public static bool IsSupported => Environment.OSVersion.Version.Build >= 22000;
 
     public static bool IsInstalled
@@ -27,6 +32,19 @@ internal static class VirtualCameraInstaller
 
     public static Task<int> UninstallAsync(string payloadDirectory) =>
         RunElevatedScriptAsync("uninstall-vcam.ps1", payloadDirectory);
+
+    public static string? ReadInstallLog()
+    {
+        try
+        {
+            if (!File.Exists(InstallLogPath)) return null;
+            return string.Join(Environment.NewLine, File.ReadLines(InstallLogPath).TakeLast(12));
+        }
+        catch
+        {
+            return null;
+        }
+    }
 
     private static async Task<int> RunElevatedScriptAsync(string scriptName, string payloadDirectory)
     {

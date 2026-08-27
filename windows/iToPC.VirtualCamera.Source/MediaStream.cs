@@ -5,7 +5,7 @@ public partial class MediaStream : IMFAttributes, IMFMediaStream2, IMFMediaStrea
 {
     public const int NUM_IMAGE_COLS = Shared.Width;
     public const int NUM_IMAGE_ROWS = Shared.Height;
-    public const int NUM_ALLOCATOR_SAMPLES = 8;
+    public const int NUM_ALLOCATOR_SAMPLES = 10;
 
     internal MFAttributes _attributes; // if we derive from it, C#/WinRT doesn't see it for some reason
     private readonly Lock _lock = new();
@@ -336,21 +336,22 @@ public partial class MediaStream : IMFAttributes, IMFMediaStream2, IMFMediaStrea
                 sample.SetSampleTime(Functions.MFGetSystemTime()).ThrowOnError();
                 sample.SetSampleDuration(10_000_000 / Shared.Fps).ThrowOnError();
 
-                using var outputSample = _generator.Generate(inputSample, _format);
+                _generator.Generate(inputSample, _format);
                 if (token != 0)
                 {
-                    outputSample.Object.SetUnknown(Constants.MFSampleExtension_Token, token).ThrowOnError();
+                    inputSample.Object.SetUnknown(Constants.MFSampleExtension_Token, token).ThrowOnError();
                 }
 
-                DirectN.Extensions.Com.ComObject.WithComInstance(outputSample, unk =>
+                DirectN.Extensions.Com.ComObject.WithComInstance(inputSample, unk =>
                 {
                     queue.Object.QueueEventParamUnk((uint)MF_EVENT_TYPE.MEMediaSample, Guid.Empty, Constants.S_OK, unk).ThrowOnError();
                 });
 
-                // we must do this sometimes, otherwise the allocator gets full too early
-                if (_generator.FrameCount % Shared.Fps == 0)
+                // Release queued COM wrappers before the Media Foundation sample
+                // allocator runs out of reusable surfaces.
+                if (_generator.FrameCount % (NUM_ALLOCATOR_SAMPLES / 2) == 0)
                 {
-                    GC.Collect();
+                    GC.Collect(0, GCCollectionMode.Forced, blocking: true, compacting: false);
                 }
                 return Constants.S_OK;
             }
