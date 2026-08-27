@@ -3,28 +3,76 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-        <SolidColorBrush x:Key="PanelBrush" Color="#171A21"/>
-        <SolidColorBrush x:Key="MutedBrush" Color="#98A2B3"/>
+        <SolidColorBrush x:Key="WindowBrush" Color="#0B0F17"/>
+        <SolidColorBrush x:Key="PanelBrush" Color="#151B26"/>
+        <SolidColorBrush x:Key="PanelBorderBrush" Color="#283349"/>
+        <SolidColorBrush x:Key="FieldBrush" Color="#202838"/>
+        <SolidColorBrush x:Key="FieldBorderBrush" Color="#3A4963"/>
+        <SolidColorBrush x:Key="TextBrush" Color="#F7F9FC"/>
+        <SolidColorBrush x:Key="MutedBrush" Color="#A9B6CC"/>
+        <SolidColorBrush x:Key="AccentBrush" Color="#3B82F6"/>
+
         <Style TargetType="Window">
-            <Setter Property="Background" Value="#0C0E13"/>
-            <Setter Property="Foreground" Value="#F4F6FA"/>
+            <Setter Property="Background" Value="{StaticResource WindowBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
             <Setter Property="FontFamily" Value="Segoe UI"/>
         </Style>
+        <Style TargetType="CheckBox">
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style TargetType="RadioButton">
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
         <Style TargetType="TextBox">
-            <Setter Property="Background" Value="#222632"/>
-            <Setter Property="Foreground" Value="#F4F6FA"/>
-            <Setter Property="BorderBrush" Value="#343A49"/>
-            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="Background" Value="{StaticResource FieldBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+            <Setter Property="CaretBrush" Value="{StaticResource TextBrush}"/>
+            <Setter Property="SelectionBrush" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource FieldBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="10,7"/>
+            <Setter Property="MinHeight" Value="36"/>
+            <Setter Property="FontSize" Value="13.5"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
         <Style TargetType="ComboBox">
-            <Setter Property="Background" Value="#222632"/>
-            <Setter Property="Foreground" Value="#111318"/>
-            <Setter Property="Padding" Value="6,4"/>
+            <Setter Property="Background" Value="#F8FAFC"/>
+            <Setter Property="Foreground" Value="#111827"/>
+            <Setter Property="BorderBrush" Value="#718096"/>
+            <Setter Property="Padding" Value="8,5"/>
+            <Setter Property="MinHeight" Value="36"/>
+            <Setter Property="FontSize" Value="13.5"/>
+        </Style>
+        <Style TargetType="ComboBoxItem">
+            <Setter Property="Background" Value="#F8FAFC"/>
+            <Setter Property="Foreground" Value="#111827"/>
+            <Setter Property="Padding" Value="8,5"/>
         </Style>
         <Style TargetType="Button">
-            <Setter Property="Padding" Value="14,8"/>
+            <Setter Property="Background" Value="#263247"/>
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+            <Setter Property="BorderBrush" Value="#465675"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="15,8"/>
+            <Setter Property="MinHeight" Value="36"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style x:Key="SectionTitleStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#DCE6F7"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style x:Key="CardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource PanelBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource PanelBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="18"/>
         </Style>
     </Application.Resources>
 </Application>
-
