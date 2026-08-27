@@ -150,7 +150,6 @@ final class HEVCEncoder {
         // Some older hardware does not expose this optional low-latency hint.
         // The explicit single-frame admission limit above remains the fallback.
         try? set(kVTCompressionPropertyKey_MaxFrameDelayCount, value: 0, on: newSession)
-        try? set(kVTCompressionPropertyKey_SuggestedLookAheadFrameCount, value: 0, on: newSession)
         try? set(kVTCompressionPropertyKey_ReferenceBufferCount, value: 1, on: newSession)
         try? set(kVTCompressionPropertyKey_AllowOpenGOP, value: false, on: newSession)
         try set(kVTCompressionPropertyKey_ExpectedFrameRate, value: fps, on: newSession)
