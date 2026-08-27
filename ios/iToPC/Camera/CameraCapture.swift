@@ -21,6 +21,7 @@ protocol CameraCaptureDelegate: AnyObject {
 
 enum CameraCaptureError: LocalizedError {
     case cameraUnavailable
+    case permissionDenied
     case inputCreationFailed(Error)
     case noCompatibleFormat
     case cannotAddInput
@@ -30,6 +31,8 @@ enum CameraCaptureError: LocalizedError {
         switch self {
         case .cameraUnavailable:
             return "背面カメラを取得できません。"
+        case .permissionDenied:
+            return "カメラの使用が許可されていません。設定アプリでiToPCのカメラ権限を有効にしてください。"
         case .inputCreationFailed(let error):
             return "カメラ入力を作成できません: \(error.localizedDescription)"
         case .noCompatibleFormat:
@@ -51,7 +54,53 @@ final class CameraCapture: NSObject, AVCaptureVideoDataOutputSampleBufferDelegat
     private let output = AVCaptureVideoDataOutput()
     private var isConfigured = false
 
+    func discoverSupportedPresets(completion: @escaping ([StreamPreset]) -> Void) {
+        sessionQueue.async {
+            let presets: [StreamPreset]
+            if let device = AVCaptureDevice.default(
+                .builtInWideAngleCamera,
+                for: .video,
+                position: .back
+            ) {
+                presets = StreamPreset.allCases.filter { preset in
+                    device.formats.contains { format in
+                        let dimensions = CMVideoFormatDescriptionGetDimensions(format.formatDescription)
+                        guard dimensions.width == preset.width,
+                              dimensions.height == preset.height else { return false }
+                        return format.videoSupportedFrameRateRanges.contains { range in
+                            range.minFrameRate <= Double(preset.fps) &&
+                                range.maxFrameRate >= Double(preset.fps)
+                        }
+                    }
+                }
+            } else {
+                presets = []
+            }
+            DispatchQueue.main.async { completion(presets) }
+        }
+    }
+
     func configure(
+        request: CaptureRequest,
+        completion: @escaping (Result<CaptureConfiguration, Error>) -> Void
+    ) {
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .authorized:
+            configureAuthorized(request: request, completion: completion)
+        case .notDetermined:
+            AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
+                guard granted else {
+                    DispatchQueue.main.async { completion(.failure(CameraCaptureError.permissionDenied)) }
+                    return
+                }
+                self?.configureAuthorized(request: request, completion: completion)
+            }
+        default:
+            DispatchQueue.main.async { completion(.failure(CameraCaptureError.permissionDenied)) }
+        }
+    }
+
+    private func configureAuthorized(
         request: CaptureRequest,
         completion: @escaping (Result<CaptureConfiguration, Error>) -> Void
     ) {
@@ -153,50 +202,18 @@ final class CameraCapture: NSObject, AVCaptureVideoDataOutputSampleBufferDelegat
         device: AVCaptureDevice,
         request: CaptureRequest
     ) throws -> (format: AVCaptureDevice.Format, fps: Int32) {
-        let fallbackTargets: [(Int32, Int32, Int32)] = request.width >= 3840
-            ? [
-                (3840, 2160, request.fps),
-                (3840, 2160, min(request.fps, 60)),
-                (3840, 2160, 30),
-                (1920, 1080, request.fps),
-                (1920, 1080, min(request.fps, 60)),
-                (1920, 1080, 30)
-            ]
-            : [
-                (1920, 1080, request.fps),
-                (1920, 1080, min(request.fps, 60)),
-                (1920, 1080, 30)
-            ]
-
-        for target in fallbackTargets {
-            if let format = device.formats.first(where: { format in
-                let dimensions = CMVideoFormatDescriptionGetDimensions(format.formatDescription)
-                guard dimensions.width == target.0, dimensions.height == target.1 else { return false }
-                return format.videoSupportedFrameRateRanges.contains { range in
-                    range.minFrameRate <= Double(target.2) && range.maxFrameRate >= Double(target.2)
-                }
-            }) {
-                return (format, target.2)
+        guard let format = device.formats.first(where: { format in
+            let dimensions = CMVideoFormatDescriptionGetDimensions(format.formatDescription)
+            guard dimensions.width == request.width,
+                  dimensions.height == request.height else { return false }
+            return format.videoSupportedFrameRateRanges.contains { range in
+                range.minFrameRate <= Double(request.fps) &&
+                    range.maxFrameRate >= Double(request.fps)
             }
-        }
-
-        guard let best = device.formats.max(by: { lhs, rhs in
-            let left = CMVideoFormatDescriptionGetDimensions(lhs.formatDescription)
-            let right = CMVideoFormatDescriptionGetDimensions(rhs.formatDescription)
-            let leftPixels = Int64(left.width) * Int64(left.height)
-            let rightPixels = Int64(right.width) * Int64(right.height)
-            if leftPixels == rightPixels {
-                return (lhs.videoSupportedFrameRateRanges.map(\.maxFrameRate).max() ?? 0)
-                    < (rhs.videoSupportedFrameRateRanges.map(\.maxFrameRate).max() ?? 0)
-            }
-            return leftPixels < rightPixels
-        }), let range = best.videoSupportedFrameRateRanges.max(by: { $0.maxFrameRate < $1.maxFrameRate }) else {
+        }) else {
             throw CameraCaptureError.noCompatibleFormat
         }
-
-        let fps = Int32(min(Double(request.fps), range.maxFrameRate).rounded(.down))
-        guard fps > 0 else { throw CameraCaptureError.noCompatibleFormat }
-        return (best, fps)
+        return (format, request.fps)
     }
 
     func captureOutput(

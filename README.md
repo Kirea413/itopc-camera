@@ -64,7 +64,7 @@ Windowsの `iToPC.Receiver.exe` を起動し、`仮想カメラをインスト�
 ## 5. USBで使う
 
 1. iPhoneをWindows PCへUSB接続し、ロックを解除する。
-2. iPhoneのiToPCで画質を選び、`配信開始` を押す。
+2. iPhoneのiToPCに実機カメラが対応する画質だけが表示されるので、画質を選び `配信開始` を押す。
 3. Windowsの `iToPC.Receiver.exe` を起動する。
 4. `USB（推奨）`、iPhoneと同じFPS、`D3D11VA`、`iToPC Cameraへ出力`を選んで `受信開始` を押す。
 5. ZoomやOBSなどのカメラ一覧で `iToPC Camera` を選ぶ。

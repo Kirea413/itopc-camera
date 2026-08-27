@@ -16,6 +16,22 @@ targets:
       - path: iToPC
     info:
       path: iToPC/Info.plist
+      properties:
+        CFBundleDisplayName: iToPC
+        CFBundleShortVersionString: 0.2.2
+        CFBundleVersion: 4
+        LSRequiresIPhoneOS: true
+        NSCameraUsageDescription: カメラ映像をWindows PCへ低遅延転送するために使用します。
+        NSLocalNetworkUsageDescription: カメラ映像をUSBまたはローカルネットワーク経由でPCへ送信します。
+        UIApplicationSupportsIndirectInputEvents: true
+        UILaunchScreen: {}
+        UIRequiredDeviceCapabilities:
+          - arm64
+          - camera-flash
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: local.itopc.camera
@@ -25,4 +41,3 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: ""
     scheme:
       testTargets: []
-

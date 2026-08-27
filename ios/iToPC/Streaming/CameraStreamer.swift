@@ -9,6 +9,8 @@ final class CameraStreamer: ObservableObject, CameraCaptureDelegate {
     @Published private(set) var isClientConnected = false
     @Published private(set) var statusText = "停止中"
     @Published private(set) var actualFormatText: String?
+    @Published private(set) var supportedPresets: [StreamPreset] = []
+    @Published private(set) var isDetectingPresets = true
     @Published var isShowingError = false
     @Published private(set) var errorText: String?
 
@@ -40,13 +42,19 @@ final class CameraStreamer: ObservableObject, CameraCaptureDelegate {
             guard let self, self.isRunning else { return }
             self.errorText = "転送エラー: \(error.localizedDescription)"
         }
+        refreshSupportedPresets()
     }
 
     func start(preset: StreamPreset) {
         guard !isRunning else { return }
+        guard supportedPresets.contains(preset) else {
+            show(CameraCaptureError.noCompatibleFormat)
+            return
+        }
         isRunning = true
         statusText = "カメラ準備中"
         errorText = nil
+        actualFormatText = nil
         attemptedEncoderFormats.removeAll(keepingCapacity: true)
         let currentRunID = UUID()
         runID = currentRunID
@@ -124,15 +132,28 @@ final class CameraStreamer: ObservableObject, CameraCaptureDelegate {
     }
 
     private func fallbackPresets(startingAt preset: StreamPreset) -> [StreamPreset] {
+        let candidates: [StreamPreset]
         switch preset {
         case .ultra:
-            return [.ultra, .high, .fast, .balanced]
+            candidates = [.ultra, .high, .fast, .balanced]
         case .high:
-            return [.high, .balanced]
+            candidates = [.high, .balanced]
         case .fast:
-            return [.fast, .balanced]
+            candidates = [.fast, .balanced]
         case .balanced:
-            return [.balanced]
+            candidates = [.balanced]
+        }
+        return candidates.filter(supportedPresets.contains)
+    }
+
+    private func refreshSupportedPresets() {
+        capture.discoverSupportedPresets { [weak self] presets in
+            guard let self else { return }
+            self.supportedPresets = presets
+            self.isDetectingPresets = false
+            if presets.isEmpty {
+                self.statusText = "対応するカメラ形式なし"
+            }
         }
     }
 

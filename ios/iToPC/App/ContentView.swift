@@ -32,13 +32,27 @@ struct ContentView: View {
                     }
                 }
 
-                Picker("画質", selection: $preset) {
-                    ForEach(StreamPreset.allCases) { item in
-                        Text(item.rawValue).tag(item)
+                if streamer.isDetectingPresets {
+                    HStack(spacing: 10) {
+                        ProgressView()
+                        Text("このiPhoneの対応画質を確認中…")
+                            .font(.subheadline)
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                } else if streamer.supportedPresets.isEmpty {
+                    Text("このカメラで利用できる配信形式がありません")
+                        .font(.subheadline)
+                        .foregroundStyle(.red)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    Picker("画質", selection: $preset) {
+                        ForEach(streamer.supportedPresets) { item in
+                            Text(item.rawValue).tag(item)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .disabled(streamer.isRunning)
                 }
-                .pickerStyle(.segmented)
-                .disabled(streamer.isRunning)
 
                 HStack(spacing: 12) {
                     VStack(alignment: .leading, spacing: 3) {
@@ -64,6 +78,7 @@ struct ContentView: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(streamer.isRunning ? .red : .blue)
+                    .disabled(streamer.isDetectingPresets || streamer.supportedPresets.isEmpty)
                 }
             }
             .padding(18)
@@ -73,6 +88,11 @@ struct ContentView: View {
         } message: {
             Text(streamer.errorText ?? "不明なエラー")
         }
+        .onChange(of: streamer.supportedPresets) { presets in
+            guard let first = presets.first else { return }
+            if !presets.contains(preset) {
+                preset = first
+            }
+        }
     }
 }
-
