@@ -5,9 +5,9 @@ namespace iToPC.Receiver;
 
 internal sealed unsafe class SharedFrameWriter : IDisposable
 {
-    public const int Width = 1920;
-    public const int Height = 1080;
-    public const int Fps = 60;
+    public const int Width = 3840;
+    public const int Height = 2160;
+    public const int Fps = 120;
     public const int FrameSize = Width * Height * 3 / 2;
     public const int HeaderSize = 4096;
     private const int FileSize = HeaderSize + FrameSize * 2;

@@ -44,7 +44,13 @@ public partial class MediaStream : IMFAttributes, IMFMediaStream2, IMFMediaStrea
             nv12Type.Set(Constants.MF_MT_ALL_SAMPLES_INDEPENDENT, 1u);
             nv12Type.SetRatio(Constants.MF_MT_FRAME_RATE, Shared.Fps, 1);
             var bitrate = (long)NUM_IMAGE_COLS * NUM_IMAGE_ROWS * 3 * 8 * Shared.Fps / 2;
-            nv12Type.Set(Constants.MF_MT_AVG_BITRATE, (uint)bitrate);
+            // MF_MT_AVG_BITRATE is UINT32, while uncompressed 4K120 NV12 is
+            // about 11.94 Gbit/s. Omit the optional attribute when it cannot
+            // represent the real value instead of publishing a wrapped value.
+            if (bitrate <= uint.MaxValue)
+            {
+                nv12Type.Set(Constants.MF_MT_AVG_BITRATE, (uint)bitrate);
+            }
             nv12Type.SetRatio(Constants.MF_MT_PIXEL_ASPECT_RATIO, 1, 1);
             mediaTypes[0] = nv12Type.Object;
 
@@ -342,7 +348,7 @@ public partial class MediaStream : IMFAttributes, IMFMediaStream2, IMFMediaStrea
                 });
 
                 // we must do this sometimes, otherwise the allocator gets full too early
-                if (_generator.FrameCount % 60 == 0)
+                if (_generator.FrameCount % Shared.Fps == 0)
                 {
                     GC.Collect();
                 }

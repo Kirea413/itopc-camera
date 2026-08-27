@@ -166,7 +166,7 @@ public partial class MainWindow : Window
                             await StopAsync();
                         }
                     }));
-                SetBusy(false, "受信中 — iToPC Cameraへ1080p60で出力中");
+                SetBusy(false, "受信中 — iToPC Cameraへ4K120で出力中");
                 AppendLog("仮想カメラ出力を開始しました。利用アプリで「iToPC Camera」を選択してください。");
             }
             else
@@ -231,7 +231,7 @@ public partial class MainWindow : Window
             arguments.AddRange(["-hwaccel", "d3d11va"]);
         }
         arguments.AddRange(["-i", source, "-an", "-sn", "-dn"]);
-        arguments.AddRange(["-vf", "scale=1920:1080:flags=fast_bilinear,fps=60,format=nv12"]);
+        arguments.AddRange(["-vf", "scale=3840:2160:flags=fast_bilinear,fps=120,format=nv12"]);
         arguments.AddRange(["-pix_fmt", "nv12", "-fps_mode", "passthrough", "-flush_packets", "1", "-f", "rawvideo", "pipe:1"]);
         return arguments;
     }

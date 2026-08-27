@@ -61,7 +61,7 @@
                 <StackPanel Grid.Column="0">
                     <TextBlock Text="映像設定" Style="{StaticResource SectionTitleStyle}" Margin="0,0,0,10"/>
                     <CheckBox x:Name="HardwareDecodeCheck" Content="D3D11VA ハードウェアデコード" IsChecked="True" Margin="0,0,0,9"/>
-                    <CheckBox x:Name="VirtualCameraCheck" Content="iToPC Cameraへ出力（1080p / 60fps）" IsChecked="True"/>
+                    <CheckBox x:Name="VirtualCameraCheck" Content="iToPC Cameraへ出力（4K / 120fps）" IsChecked="True"/>
                     <Button x:Name="VirtualCameraInstallButton" Content="仮想カメラをインストール"
                             HorizontalAlignment="Left" Margin="0,14,0,0" Padding="12,6"
                             Click="VirtualCameraInstallClicked"/>
