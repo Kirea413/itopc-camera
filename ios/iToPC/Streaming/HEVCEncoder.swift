@@ -25,7 +25,7 @@ final class HEVCEncoder {
 
     private let queue = DispatchQueue(label: "local.itopc.encoder", qos: .userInteractive)
     private let outstandingFramesLock = NSLock()
-    private let maximumOutstandingFrames = 2
+    private let maximumOutstandingFrames = 1
     private var session: VTCompressionSession?
     private var fps: Int32 = 60
     private var forceNextKeyFrame = true
@@ -148,11 +148,13 @@ final class HEVCEncoder {
         try set(kVTCompressionPropertyKey_RealTime, value: true, on: newSession)
         try set(kVTCompressionPropertyKey_AllowFrameReordering, value: false, on: newSession)
         // Some older hardware does not expose this optional low-latency hint.
-        // The explicit two-frame admission limit above remains the fallback.
-        try? set(kVTCompressionPropertyKey_MaxFrameDelayCount, value: 1, on: newSession)
+        // The explicit single-frame admission limit above remains the fallback.
+        try? set(kVTCompressionPropertyKey_MaxFrameDelayCount, value: 0, on: newSession)
+        try? set(kVTCompressionPropertyKey_SuggestedLookAheadFrameCount, value: 0, on: newSession)
+        try? set(kVTCompressionPropertyKey_ReferenceBufferCount, value: 1, on: newSession)
+        try? set(kVTCompressionPropertyKey_AllowOpenGOP, value: false, on: newSession)
         try set(kVTCompressionPropertyKey_ExpectedFrameRate, value: fps, on: newSession)
         try set(kVTCompressionPropertyKey_AverageBitRate, value: bitrate, on: newSession)
-        try set(kVTCompressionPropertyKey_DataRateLimits, value: [bitrate / 8, 1], on: newSession)
         try set(kVTCompressionPropertyKey_MaxKeyFrameInterval, value: max(1, fps / 4), on: newSession)
         try set(kVTCompressionPropertyKey_MaxKeyFrameIntervalDuration, value: 0.25, on: newSession)
         try set(kVTCompressionPropertyKey_ProfileLevel, value: kVTProfileLevel_HEVC_Main_AutoLevel, on: newSession)

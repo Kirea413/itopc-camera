@@ -5,7 +5,7 @@ public partial class MediaStream : IMFAttributes, IMFMediaStream2, IMFMediaStrea
 {
     public const int NUM_IMAGE_COLS = Shared.Width;
     public const int NUM_IMAGE_ROWS = Shared.Height;
-    public const int NUM_ALLOCATOR_SAMPLES = 10;
+    public const int NUM_ALLOCATOR_SAMPLES = 3;
 
     internal MFAttributes _attributes; // if we derive from it, C#/WinRT doesn't see it for some reason
     private readonly Lock _lock = new();
@@ -347,12 +347,6 @@ public partial class MediaStream : IMFAttributes, IMFMediaStream2, IMFMediaStrea
                     queue.Object.QueueEventParamUnk((uint)MF_EVENT_TYPE.MEMediaSample, Guid.Empty, Constants.S_OK, unk).ThrowOnError();
                 });
 
-                // Release queued COM wrappers before the Media Foundation sample
-                // allocator runs out of reusable surfaces.
-                if (_generator.FrameCount % (NUM_ALLOCATOR_SAMPLES / 2) == 0)
-                {
-                    GC.Collect(0, GCCollectionMode.Forced, blocking: true, compacting: false);
-                }
                 return Constants.S_OK;
             }
         }

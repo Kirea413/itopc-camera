@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO;
+using System.IO.Pipes;
 
 namespace iToPC.Receiver;
 
@@ -7,6 +8,7 @@ internal sealed class RawFramePump : IAsyncDisposable
 {
     private readonly Process _process;
     private readonly SharedFrameWriter _writer;
+    private readonly NamedPipeServerStream _framePipe;
     private readonly CancellationTokenSource _cancellation = new();
     private readonly Task _readTask;
     private readonly Task _exitTask;
@@ -26,15 +28,28 @@ internal sealed class RawFramePump : IAsyncDisposable
         if (logReceived is not null) LogReceived += logReceived;
         if (exited is not null) Exited += exited;
         _writer = new SharedFrameWriter();
+        var pipeName = $"itopc-frames-{Environment.ProcessId}-{Guid.NewGuid():N}";
+        var pipePath = $@"\\.\pipe\{pipeName}";
+        _framePipe = new NamedPipeServerStream(
+            pipeName,
+            PipeDirection.In,
+            maxNumberOfServerInstances: 1,
+            PipeTransmissionMode.Byte,
+            PipeOptions.Asynchronous,
+            inBufferSize: 1024 * 1024,
+            outBufferSize: 0);
         var startInfo = new ProcessStartInfo
         {
             FileName = ffmpegPath,
             UseShellExecute = false,
             CreateNoWindow = true,
-            RedirectStandardOutput = true,
+            RedirectStandardOutput = false,
             RedirectStandardError = true
         };
-        foreach (var argument in arguments) startInfo.ArgumentList.Add(argument);
+        foreach (var argument in arguments)
+        {
+            startInfo.ArgumentList.Add(argument == "pipe:1" ? pipePath : argument);
+        }
 
         _process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
         _process.ErrorDataReceived += (_, args) =>
@@ -51,10 +66,10 @@ internal sealed class RawFramePump : IAsyncDisposable
 
     private void ReadFrames(CancellationToken cancellationToken)
     {
-        var stream = _process.StandardOutput.BaseStream;
+        _framePipe.WaitForConnection();
         while (!cancellationToken.IsCancellationRequested)
         {
-            if (!_writer.ReadAndPublish(stream, cancellationToken)) break;
+            if (!_writer.ReadAndPublish(_framePipe, cancellationToken)) break;
             Interlocked.Exchange(ref _lastFrameTicks, DateTime.UtcNow.Ticks);
         }
     }
@@ -88,10 +103,12 @@ internal sealed class RawFramePump : IAsyncDisposable
         {
             _process.Kill(entireProcessTree: true);
         }
+        _framePipe.Dispose();
 
         try { await Task.WhenAll(_readTask, _exitTask, _watchdogTask); }
         catch (OperationCanceledException) { }
         catch (IOException) when (_cancellation.IsCancellationRequested) { }
+        catch (ObjectDisposedException) when (_cancellation.IsCancellationRequested) { }
 
         _process.Dispose();
         _writer.Dispose();

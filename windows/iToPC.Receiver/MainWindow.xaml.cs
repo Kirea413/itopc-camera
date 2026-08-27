@@ -231,7 +231,7 @@ public partial class MainWindow : Window
     {
         var arguments = new List<string>
         {
-            "-hide_banner", "-loglevel", "warning",
+            "-hide_banner", "-loglevel", "warning", "-y",
             "-fflags", "nobuffer", "-flags", "low_delay", "-avioflags", "direct",
             "-analyzeduration", "0", "-probesize", "4096", "-max_delay", "0",
             "-thread_queue_size", "1", "-f", "hevc", "-framerate", fps
