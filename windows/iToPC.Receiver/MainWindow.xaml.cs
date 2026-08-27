@@ -151,8 +151,11 @@ public partial class MainWindow : Window
                 var address = PhoneAddressBox.Text.Trim();
                 if (string.IsNullOrWhiteSpace(address))
                     throw new InvalidOperationException("iPhoneのIPアドレスを入力してください。");
-                source = $"tcp://{address}:{devicePort}";
-                AppendLog($"Wi-Fi接続先: {source}");
+                AppendLog($"Wi-Fi上のiPhoneへ接続しています ({address}:{devicePort})…");
+                _usbProxy = new UsbMuxProxy(devicePort, address);
+                await _usbProxy.StartAsync(_runCancellation.Token);
+                source = $"tcp://127.0.0.1:{_usbProxy.LocalPort}";
+                AppendLog($"低遅延プロキシを開きました (localhost:{_usbProxy.LocalPort})");
             }
 
             if (virtualCameraMode)
@@ -229,16 +232,16 @@ public partial class MainWindow : Window
         var arguments = new List<string>
         {
             "-hide_banner", "-loglevel", "warning",
-            "-flags", "low_delay", "-avioflags", "direct",
-            "-analyzeduration", "0", "-probesize", "4096",
-            "-f", "hevc", "-framerate", fps
+            "-fflags", "nobuffer", "-flags", "low_delay", "-avioflags", "direct",
+            "-analyzeduration", "0", "-probesize", "4096", "-max_delay", "0",
+            "-thread_queue_size", "1", "-f", "hevc", "-framerate", fps
         };
         if (hardwareDecode)
         {
             arguments.AddRange(["-hwaccel", "d3d11va"]);
         }
         arguments.AddRange(["-i", source, "-an", "-sn", "-dn"]);
-        arguments.AddRange(["-vf", "scale=3840:2160:flags=fast_bilinear,fps=120,format=nv12"]);
+        arguments.AddRange(["-vf", "scale=3840:2160:flags=fast_bilinear,format=nv12"]);
         arguments.AddRange(["-pix_fmt", "nv12", "-fps_mode", "passthrough", "-flush_packets", "1", "-f", "rawvideo", "pipe:1"]);
         return arguments;
     }

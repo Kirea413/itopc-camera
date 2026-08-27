@@ -153,8 +153,8 @@ final class HEVCEncoder {
         try set(kVTCompressionPropertyKey_ExpectedFrameRate, value: fps, on: newSession)
         try set(kVTCompressionPropertyKey_AverageBitRate, value: bitrate, on: newSession)
         try set(kVTCompressionPropertyKey_DataRateLimits, value: [bitrate / 8, 1], on: newSession)
-        try set(kVTCompressionPropertyKey_MaxKeyFrameInterval, value: max(1, fps / 2), on: newSession)
-        try set(kVTCompressionPropertyKey_MaxKeyFrameIntervalDuration, value: 0.5, on: newSession)
+        try set(kVTCompressionPropertyKey_MaxKeyFrameInterval, value: max(1, fps / 4), on: newSession)
+        try set(kVTCompressionPropertyKey_MaxKeyFrameIntervalDuration, value: 0.25, on: newSession)
         try set(kVTCompressionPropertyKey_ProfileLevel, value: kVTProfileLevel_HEVC_Main_AutoLevel, on: newSession)
 
         if #available(iOS 15.0, *) {

@@ -76,14 +76,47 @@ internal sealed unsafe class SharedFrameWriter : IDisposable
             _view.SafeMemoryMappedViewHandle.ReleasePointer();
         }
 
+        Commit(slot);
+    }
+
+    public void Publish(byte[] frame) => Publish(frame.AsSpan());
+
+    public bool ReadAndPublish(Stream source, CancellationToken cancellationToken)
+    {
+        var slot = _nextSlot;
+        byte* viewBase = null;
+        _view.SafeMemoryMappedViewHandle.AcquirePointer(ref viewBase);
+        try
+        {
+            var destination = new Span<byte>(
+                viewBase + _view.PointerOffset + HeaderSize + slot * FrameSize,
+                FrameSize);
+            var offset = 0;
+            while (offset < destination.Length)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var read = source.Read(destination[offset..]);
+                if (read == 0) return false;
+                offset += read;
+            }
+        }
+        finally
+        {
+            _view.SafeMemoryMappedViewHandle.ReleasePointer();
+        }
+
+        Commit(slot);
+        return true;
+    }
+
+    private void Commit(int slot)
+    {
         Thread.MemoryBarrier();
         _view.Write(20, slot);
         _view.Write(32, DateTime.UtcNow.Ticks);
         _view.Write(24, ++_sequence);
         _nextSlot = 1 - slot;
     }
-
-    public void Publish(byte[] frame) => Publish(frame.AsSpan());
 
     private void WriteStandbyFrames()
     {

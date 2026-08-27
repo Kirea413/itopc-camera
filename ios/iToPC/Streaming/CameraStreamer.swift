@@ -110,6 +110,11 @@ final class CameraStreamer: ObservableObject, CameraCaptureDelegate {
                         }
                     case .success:
                         self.actualFormatText = "\(configuration.width)×\(configuration.height) / \(configuration.fps)fps"
+                        self.server.configure(
+                            width: configuration.width,
+                            height: configuration.height,
+                            fps: configuration.fps
+                        )
                         self.server.start()
                         self.capture.start()
                         self.statusText = "PC待機中 :5000"

@@ -6,7 +6,7 @@
 iPhone camera
   → AVCaptureVideoDataOutput (NV12)
   → VideoToolbox hardware HEVC encoder
-  → HEVC Annex-B byte stream
+  → frame header + HEVC Annex-B payload
   → NWListener TCP :5000
   → Apple usbmux / USB cable
   → local TCP proxy in iToPC Receiver
@@ -16,22 +16,22 @@ iPhone camera
   → Zoom / Teams / OBS / browser
 ```
 
-Wi-Fiモードではusbmuxを通さず、WindowsからiPhoneのローカルIPアドレスのTCP 5000番へ直接接続する。
+Wi-Fiモードではusbmuxを通さず、同じ低遅延ローカルプロキシがiPhoneのTCP 5000番へ接続する。
 
 ## 遅延を抑える設定
 
 - カメラ出力は `alwaysDiscardsLateVideoFrames = true`。
 - HEVCはVideoToolboxのリアルタイム・ハードウェアエンコードを必須にする。
-- Bフレームを無効化し、キーフレーム間隔を1秒にする。
+- Bフレームを無効化し、キーフレーム間隔を約0.25秒にする。
 - TCP_NODELAYを有効化する。
-- 送信待ちを最大3フレームに制限する。
+- iPhoneとPCの送信待ちをそれぞれ最大2フレームに制限する。
 - 詰まりを検出した場合は古い依存フレームを捨て、強制キーフレームから再開する。
 - WindowsはFFmpegの解析時間と同期バッファを最小化する。
 - 仮想カメラは最新フレームだけを読む二重バッファで、読み手が遅れても受信側を停止させない。
 
 ## 映像形式
 
-映像は長さ付きHEVC NALをiPhone上でAnnex-Bへ変換する。各キーフレームの直前にVPS、SPS、PPSを再送し、キーフレーム間隔は約0.5秒。音声とコンテナは使わない。これは映像遅延を最小化するための意図的な制限。
+映像は長さ付きHEVC NALをiPhone上でAnnex-Bへ変換する。各キーフレームの直前にVPS、SPS、PPSを再送し、キーフレーム間隔は約0.25秒。各映像フレームの前には24バイトのiToPCヘッダーを付け、ペイロード長、シーケンス、解像度、fps、キーフレームフラグを送る。PC側はこの境界情報を使い、処理が詰まった場合に古いGOPを捨てる。音声とコンテナは使わない。これは映像遅延を最小化するための意図的な制限。
 
 仮想カメラ用共有ファイルは `%ProgramData%\iToPC\frames.nv12`。4096バイトのヘッダーに形式、アクティブスロット、シーケンス番号を置き、その後ろに3840×2160 NV12フレームを2枚保持する。受信側は未使用スロットへ書いてからアクティブスロットを原子的に切り替え、Media Foundationソースは読み込み前後のシーケンスが一致するフレームだけを公開する。1フレームは12,441,600バイト、120fps時の生フレーム帯域は約1.49GB/s。
 
