@@ -57,7 +57,7 @@ ios/build-ipa.sh
 
 ## 4. 仮想カメラをインストールする
 
-Windowsの `iToPC.Receiver.exe` を起動し、`仮想カメラをインストール` を押します。UAC確認を許可すると、Media FoundationソースがProgram Filesへ登録されます。これは最初の一度だけ必要です。
+Windowsの `iToPC.Receiver.exe` を起動し、`仮想カメラをインストール` を押します。UAC確認を許可すると、Media FoundationソースがProgram Filesへ登録されます。配布版に新しい仮想カメラDLLが含まれる場合はボタンが `仮想カメラを更新` に変わり、アンインストールを挟まず上書きできます。
 
 アンインストールする場合は、同じボタンが `仮想カメラをアンインストール` に変わるので、カメラを利用中のアプリを閉じてから実行します。
 

@@ -18,8 +18,8 @@ targets:
       path: iToPC/Info.plist
       properties:
         CFBundleDisplayName: iToPC
-        CFBundleShortVersionString: 0.2.4
-        CFBundleVersion: 6
+        CFBundleShortVersionString: 0.2.5
+        CFBundleVersion: 7
         LSRequiresIPhoneOS: true
         NSCameraUsageDescription: カメラ映像をWindows PCへ低遅延転送するために使用します。
         NSLocalNetworkUsageDescription: カメラ映像をUSBまたはローカルネットワーク経由でPCへ送信します。

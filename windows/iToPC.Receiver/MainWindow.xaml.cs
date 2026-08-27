@@ -75,12 +75,16 @@ public partial class MainWindow : Window
         try
         {
             var payload = FindVirtualCameraPayload();
+            var wasInstalled = VirtualCameraInstaller.IsInstalled;
+            var isUpdate = wasInstalled && VirtualCameraInstaller.IsUpdateAvailable(payload);
             VirtualCameraInstallButton.IsEnabled = false;
-            StatusText.Text = VirtualCameraInstaller.IsInstalled ? "仮想カメラを削除中" : "仮想カメラをインストール中";
+            StatusText.Text = isUpdate
+                ? "仮想カメラを更新中"
+                : wasInstalled ? "仮想カメラを削除中" : "仮想カメラをインストール中";
 
-            var exitCode = VirtualCameraInstaller.IsInstalled
-                ? await VirtualCameraInstaller.UninstallAsync(payload)
-                : await VirtualCameraInstaller.InstallAsync(payload);
+            var exitCode = !wasInstalled || isUpdate
+                ? await VirtualCameraInstaller.InstallAsync(payload)
+                : await VirtualCameraInstaller.UninstallAsync(payload);
             if (exitCode != 0)
             {
                 var details = VirtualCameraInstaller.ReadInstallLog();
@@ -90,9 +94,11 @@ public partial class MainWindow : Window
                     (string.IsNullOrWhiteSpace(details) ? string.Empty : $"{Environment.NewLine}{Environment.NewLine}{details}"));
             }
 
-            AppendLog(VirtualCameraInstaller.IsInstalled
-                ? "iToPC Cameraをインストールしました。"
-                : "iToPC Cameraを削除しました。");
+            AppendLog(isUpdate
+                ? "iToPC Cameraを更新しました。"
+                : VirtualCameraInstaller.IsInstalled
+                    ? "iToPC Cameraをインストールしました。"
+                    : "iToPC Cameraを削除しました。");
             UpdateVirtualCameraButton();
             StatusText.Text = "停止中";
         }
@@ -318,9 +324,23 @@ public partial class MainWindow : Window
 
     private void UpdateVirtualCameraButton()
     {
-        VirtualCameraInstallButton.Content = VirtualCameraInstaller.IsInstalled
-            ? "仮想カメラをアンインストール"
-            : "仮想カメラをインストール";
+        if (!VirtualCameraInstaller.IsInstalled)
+        {
+            VirtualCameraInstallButton.Content = "仮想カメラをインストール";
+            return;
+        }
+
+        try
+        {
+            var payload = FindVirtualCameraPayload();
+            VirtualCameraInstallButton.Content = VirtualCameraInstaller.IsUpdateAvailable(payload)
+                ? "仮想カメラを更新"
+                : "仮想カメラをアンインストール";
+        }
+        catch
+        {
+            VirtualCameraInstallButton.Content = "仮想カメラをアンインストール";
+        }
     }
 
     private void AppendLog(string text)

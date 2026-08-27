@@ -30,8 +30,35 @@ function Invoke-CameraControl([string]$Executable, [string]$Command) {
     return $exitCode
 }
 
-$frameServer = Get-Service -Name "FrameServer" -ErrorAction SilentlyContinue
-$restartFrameServer = $frameServer -and $frameServer.Status -eq [System.ServiceProcess.ServiceControllerStatus]::Running
+$cameraServiceNames = @("FrameServerMonitor", "FrameServer")
+$cameraServicesToRestart = @($cameraServiceNames | Where-Object {
+    $service = Get-Service -Name $_ -ErrorAction SilentlyContinue
+    $service -and $service.Status -eq [System.ServiceProcess.ServiceControllerStatus]::Running
+})
+function Stop-CameraServices {
+    Get-Process -Name "WindowsCamera" -ErrorAction SilentlyContinue | ForEach-Object {
+        Write-InstallLog "Closing Windows Camera process $($_.Id) for virtual-camera maintenance."
+        Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue
+    }
+    foreach ($serviceName in $cameraServiceNames) {
+        $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
+        if ($service -and $service.Status -ne [System.ServiceProcess.ServiceControllerStatus]::Stopped) {
+            Write-InstallLog "Stopping service $serviceName."
+            Stop-Service -Name $serviceName -Force -ErrorAction Stop
+            (Get-Service -Name $serviceName).WaitForStatus(
+                [System.ServiceProcess.ServiceControllerStatus]::Stopped,
+                [TimeSpan]::FromSeconds(15))
+        }
+    }
+}
+function Restart-CameraServices {
+    foreach ($serviceName in @("FrameServer", "FrameServerMonitor")) {
+        if ($cameraServicesToRestart -contains $serviceName) {
+            Start-Service -Name $serviceName -ErrorAction Stop
+            Write-InstallLog "Service $serviceName restarted."
+        }
+    }
+}
 
 try {
     # IMFVirtualCamera.Remove needs the Frame Server to be available. Remove the
@@ -44,12 +71,7 @@ try {
         Write-InstallLog "Persistent virtual camera removed."
     }
 
-    if ($restartFrameServer) {
-        Stop-Service -Name "FrameServer" -Force -ErrorAction Stop
-        (Get-Service -Name "FrameServer").WaitForStatus(
-            [System.ServiceProcess.ServiceControllerStatus]::Stopped,
-            [TimeSpan]::FromSeconds(15))
-    }
+    Stop-CameraServices
 
     if (Test-Path -LiteralPath $sourceDll) {
         & regsvr32.exe /s /u $sourceDll
@@ -64,9 +86,16 @@ try {
         Remove-Item -LiteralPath $resolvedTarget -Recurse -Force
     }
 }
+catch {
+    Write-InstallLog "ERROR: $($_.Exception.Message)"
+    throw
+}
 finally {
-    if ($restartFrameServer) {
-        Start-Service -Name "FrameServer" -ErrorAction SilentlyContinue
+    try {
+        Restart-CameraServices
+    }
+    catch {
+        Write-InstallLog "WARNING: Failed to restart camera services: $($_.Exception.Message)"
     }
 }
 

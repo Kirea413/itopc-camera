@@ -2,6 +2,7 @@ using Microsoft.Win32;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Security.Cryptography;
 
 namespace iToPC.Receiver;
 
@@ -20,11 +21,35 @@ internal static class VirtualCameraInstaller
     {
         get
         {
-            using var root = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
-            using var key = root.OpenSubKey($@"Software\Classes\CLSID\{SourceClsid}\InprocServer32");
-            var path = key?.GetValue(null) as string;
+            var path = GetInstalledSourcePath();
             return !string.IsNullOrWhiteSpace(path) && File.Exists(path);
         }
+    }
+
+    public static bool IsUpdateAvailable(string payloadDirectory)
+    {
+        var installedPath = GetInstalledSourcePath();
+        var payloadPath = Path.Combine(payloadDirectory, "iToPC.VirtualCamera.Source.dll");
+        if (string.IsNullOrWhiteSpace(installedPath) || !File.Exists(installedPath) || !File.Exists(payloadPath))
+            return false;
+
+        try
+        {
+            using var installedStream = new FileStream(installedPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            using var payloadStream = new FileStream(payloadPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            return !SHA256.HashData(installedStream).SequenceEqual(SHA256.HashData(payloadStream));
+        }
+        catch
+        {
+            return true;
+        }
+    }
+
+    private static string? GetInstalledSourcePath()
+    {
+        using var root = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
+        using var key = root.OpenSubKey($@"Software\Classes\CLSID\{SourceClsid}\InprocServer32");
+        return key?.GetValue(null) as string;
     }
 
     public static Task<int> InstallAsync(string payloadDirectory) =>
